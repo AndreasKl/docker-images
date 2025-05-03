@@ -3,7 +3,8 @@
 A custom ClickHouse server image, ready to connect to Microsoft SQL Server without using proprietary libraries. Based on the official linux/amd64 ClickHouse Server Docker Image.
 
 See the [Dockerfile](./Dockerfile) for details.
-https://hub.docker.com/r/andreaskluth/clickhouse-server-sqlserver
+[https://hub.docker.com/r/andreaskluth/clickhouse-server-sqlserver](https://hub.docker.com/r/andreaskluth/clickhouse-server-sqlserver
+)
 
 ## odbc.ini and odbcinst.ini
 
@@ -11,9 +12,9 @@ FreeTDS needs an `odbc.ini` and an `odbcinst.ini` mounted to `/etc/odbc.ini` and
 
 A basic configuration would look like:
 
+### **odbc.ini**
 
-**odbc.ini**
-```
+```text
 [MyServer]
 Driver = FreeTDS
 Server = <<server-ip or dns-name>>
@@ -22,8 +23,9 @@ Port = 1433
 # ServerName = <<needs to be configured in /etc/freetds/freetds.conf>>
 ```
 
-**odbcinst.ini**
-```
+### odbcinst.ini
+
+```text
 [FreeTDS]
 Description=FreeTDS Driver for Linux & MSSQL
 Driver=/usr/lib/x86_64-linux-gnu/odbc/libtdsodbc.so
@@ -58,7 +60,7 @@ SQL>
 
 When the above command works, accessing the SQL Server from ClickHouse is as easy as:
 
-```
+```sql
 # Validate the odbc bridge
 SELECT * FROM odbc('DSN=dummy', dummy);
 
@@ -77,27 +79,13 @@ Query id: b64fbf5d-319f-40e9-a402-21f09a641a19
 
 ```
 
-> Sometimes the clickhouse-odbc-bridge crashes on the first start-up. The process appears and then crashes
-> after a few seconds. However, after the initial cash the process is restarted by ClickHouse and runs 
-> stable.
-> 
-> The crash is causing a timeout with the following error message:
-
-```
-Received exception from server (version 25.4.1):
-Code: 1000. DB::Exception: Received from localhost:9000. DB::Exception: Connection refused. (POCO_EXCEPTION)
-```
-
-> The process appears and then crashes after a few seconds, however when the call succeeds it continues to work.
-
 ## Debug Notes
 
 ClickHouse starts the odbc-bridge with the following arguments:
 
-```
+```bash
 clickhouse-odbc-bridge --http-port 9018 --listen-host 127.0.0.1 --http-timeout 30000000 --http-max-field-value-size 99999999999999999
 ```
-
 
 ## Developer Notes: Updating this image
 
