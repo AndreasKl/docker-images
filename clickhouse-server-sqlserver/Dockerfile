@@ -2,9 +2,11 @@ ARG TAG=head
 
 FROM ubuntu:22.04 AS builder
 
+ARG DEBIAN_FRONTEND=noninteractive
+
 # Install dependencies
 RUN apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    apt-get install -y --no-install-recommends \
     build-essential \
     ca-certificates \
     git \
@@ -20,13 +22,15 @@ RUN apt-get update && \
     m4 \
     gperf \
     curl && \
-    apt-get clean
+    rm -rf /var/lib/apt/lists/* /var/cache/debconf /tmp/*
 
 # Build FreeTDS from source
 WORKDIR /build
 RUN git clone https://github.com/FreeTDS/freetds.git 
 WORKDIR /build/freetds
-RUN git checkout v1.5.1 && \
+
+# Checkout v1.5.1 via the commit hash and build freetds
+RUN git checkout 349445e && \
     ./autogen.sh && \
     ./configure --prefix=/opt/freetds --with-openssl --enable-odbc && \
     make && \
@@ -39,14 +43,11 @@ ARG TAG
 # Copy FreeTDS from builder stage
 COPY --from=builder /opt/freetds /opt/freetds
 
-# Set env for shared libraries
-ENV LD_LIBRARY_PATH=/opt/freetds/lib:/usr/lib:/lib
-
 # Install GPG and needed libs
 RUN apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    apt-get install -y --no-install-recommends \
     gpg gpg-agent dirmngr unixodbc libct4 libsybdb5 && \
-    apt-get clean
+    rm -rf /var/lib/apt/lists/* /var/cache/debconf /tmp/*
 
 ## Add clickhouse-odbc-bridge
 # Add keys
@@ -54,9 +55,9 @@ RUN GNUPGHOME=$(mktemp -d) && \
     GNUPGHOME="$GNUPGHOME" gpg --no-default-keyring --keyring /usr/share/keyrings/clickhouse-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 8919F6BD2B48D754 && \
     echo "deb [arch=amd64 signed-by=/usr/share/keyrings/clickhouse-keyring.gpg] https://packages.clickhouse.com/deb stable main" | tee \/etc/apt/sources.list.d/clickhouse.list && \
     apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    apt-get install -y --no-install-recommends \
     clickhouse-odbc-bridge && \
-    apt-get clean
+    rm -rf /var/lib/apt/lists/* /var/cache/debconf /tmp/*
 
 ## Add the basic driver config
 COPY odbcinst.ini /etc/odbcinst.ini
